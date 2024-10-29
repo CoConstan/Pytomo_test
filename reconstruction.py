@@ -55,6 +55,10 @@ attenuation_transform = SPECTAttenuationTransform(torch_attmap)
 psf_meta = dicom.get_psfmeta_from_scanner_params('SY-ME', energy_keV=208, intrinsic_resolution=0.38)
 psf_transform = SPECTPSFTransform(psf_meta)
 
+############################################################################################################
+                                # Reconstruction without Attenuation and PSF #
+############################################################################################################
+
 #### make system matrix ####
 system_matrix = SPECTSystemMatrix(
     obj2obj_transforms = [],
@@ -67,4 +71,43 @@ likelihood = PoissonLogLikelihood(system_matrix, projections=proj)
 reconstruction_algorithm = OSEM(likelihood)
 reconstructed_object = reconstruction_algorithm(n_iters=4, n_subsets=8)
 
-save_mdh(reconstructed_object, filename="Test_case_2/reconstructed_object", origin=itk_attmap.GetOrigin(), spacing=object_meta.dr)
+save_mdh(reconstructed_object, filename="Test_case_2/reconstructed_object_no_att_no_psf", origin=itk_attmap.GetOrigin(), spacing=object_meta.dr)
+
+
+############################################################################################################
+                                # Reconstruction with Attenuation and without PSF #
+############################################################################################################
+
+
+#### make system matrix ####
+system_matrix = SPECTSystemMatrix(
+    obj2obj_transforms = [attenuation_transform],
+    proj2proj_transforms = [],
+    object_meta = object_meta,
+    proj_meta = proj_meta)
+
+#### make likelihood ####
+likelihood = PoissonLogLikelihood(system_matrix, projections=proj)
+reconstruction_algorithm = OSEM(likelihood)
+reconstructed_object = reconstruction_algorithm(n_iters=4, n_subsets=8)
+
+save_mdh(reconstructed_object, filename="Test_case_2/reconstructed_object_att_no_psf", origin=itk_attmap.GetOrigin(), spacing=object_meta.dr)
+
+
+############################################################################################################
+                                # Reconstruction with Attenuation and PSF #
+############################################################################################################
+
+#### make system matrix ####
+system_matrix = SPECTSystemMatrix(
+    obj2obj_transforms = [attenuation_transform, psf_transform],
+    proj2proj_transforms = [],
+    object_meta = object_meta,
+    proj_meta = proj_meta)
+
+#### make likelihood ####
+likelihood = PoissonLogLikelihood(system_matrix, projections=proj)
+reconstruction_algorithm = OSEM(likelihood)
+reconstructed_object = reconstruction_algorithm(n_iters=4, n_subsets=8)
+
+save_mdh(reconstructed_object, filename="Test_case_2/reconstructed_object_att_psf", origin=itk_attmap.GetOrigin(), spacing=object_meta.dr)
